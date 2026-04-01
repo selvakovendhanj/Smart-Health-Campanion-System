@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Health Companion</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+  <!-- Bootstrap Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  />
+
+  <style>
+    /* Blue/green gradient theme */
+    body {
+      background: linear-gradient(135deg, #e8f5e9 0%, #e3f2fd 100%);
+      min-height: 100vh;
+    }
+
+    .navbar {
+      background: linear-gradient(90deg, #1565c0, #2e7d32) !important;
+    }
+
+    .btn, .card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+
+    /* Loading spinner overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    /* Smooth scroll */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    section {
+      padding: 80px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Spinner Overlay (hidden after 800ms) -->
+  <div id="loading-overlay" aria-live="polite" aria-label="Loading application">
+    <div class="text-center">
+      <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
+        <span class="visually-hidden">Loading…</span>
+      </div>
+      <p class="mt-3 text-muted">Loading Smart Health Companion…</p>
+    </div>
+  </div>
+
+  <!-- localStorage unavailability warning banner (hidden by default) -->
+  <div
+    id="storage-warning"
+    class="alert alert-warning alert-dismissible fade show d-none m-0 rounded-0"
+    role="alert"
+  >
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Storage unavailable.</strong> Your browser does not support localStorage or it is
+    disabled. Data will <strong>not</strong> be saved between sessions.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-md navbar-dark sticky-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="#home">
+        <i class="bi bi-heart-pulse-fill me-2"></i>Smart Health Companion
+      </a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#mainNav"
+        aria-controls="mainNav"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="#home"><i class="bi bi-house me-1"></i>Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="#home"><i class="bi bi-grid me-1"></i>Features</a></li>
+          <li class="nav-item"><a class="nav-link" href="#tracker"><i class="bi bi-activity me-1"></i>Tracker</a></li>
+          <li class="nav-item"><a class="nav-link" href="#wellness"><i class="bi bi-emoji-smile me-1"></i>Mental Wellness</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contact"><i class="bi bi-envelope me-1"></i>Contact</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Auth Section -->
+  <section id="auth" class="d-none">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-5">
+          <!-- Login Form -->
+          <div id="login-form-container" class="card shadow-sm p-4">
+            <h3 class="mb-3 text-center">Sign In</h3>
+            <div id="login-error" class="alert alert-danger d-none" role="alert"></div>
+            <form id="login-form" novalidate>
+              <div class="mb-3">
+                <label for="login-username" class="form-label">Username or Email</label>
+                <input type="text" class="form-control" id="login-username" required />
+              </div>
+              <div class="mb-3">
+                <label for="login-password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="login-password" required />
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                <span id="login-spinner" class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                Sign In
+              </button>
+            </form>
+            <p class="text-center mt-3">
+              No account? <a href="#" id="show-signup">Sign up</a>
+            </p>
+          </div>
+
+          <!-- Signup Form -->
+          <div id="signup-form-container" class="card shadow-sm p-4 d-none">
+            <h3 class="mb-3 text-center">Create Account</h3>
+            <div id="signup-error" class="alert alert-danger d-none" role="alert"></div>
+            <form id="signup-form" novalidate>
+              <div class="mb-3">
+                <label for="signup-username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="signup-username" required />
+              </div>
+              <div class="mb-3">
+                <label for="signup-email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="signup-email" required />
+              </div>
+              <div class="mb-3">
+                <label for="signup-password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="signup-password" required />
+              </div>
+              <button type="submit" class="btn btn-success w-100">
+                <span id="signup-spinner" class="spinner-border spinner-border-sm d-none me-2" role="status"></span>
+                Create Account
+              </button>
+            </form>
+            <p class="text-center mt-3">
+              Already have an account? <a href="#" id="show-login">Sign in</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Home / Hero Section -->
+  <section id="home">
+    <div class="container text-center">
+      <h1 class="display-4 fw-bold mb-3">Your AI Partner for a Healthier Life</h1>
+      <p class="lead text-muted mb-4">
+        Track your health metrics, monitor your mood, get AI-powered recommendations,
+        and manage your daily wellness tasks — all in one place.
+      </p>
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="#auth" class="btn btn-primary btn-lg">
+          <i class="bi bi-person-plus me-2"></i>Get Started
+        </a>
+        <a href="#tracker" class="btn btn-outline-success btn-lg">
+          <i class="bi bi-activity me-2"></i>Track Now
+        </a>
+      </div>
+
+      <!-- Feature Cards -->
+      <div class="row mt-5 g-4">
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-heart-pulse fs-1 text-danger mb-3 d-block"></i>
+              <h5 class="card-title">Health Tracking</h5>
+              <p class="card-text text-muted">Log steps, water, sleep, and calories daily.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-robot fs-1 text-primary mb-3 d-block"></i>
+              <h5 class="card-title">AI Recommendations</h5>
+              <p class="card-text text-muted">Get personalized tips based on your data.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-emoji-smile fs-1 text-warning mb-3 d-block"></i>
+              <h5 class="card-title">Mental Wellness</h5>
+              <p class="card-text text-muted">Track mood and chat with your AI companion.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-check2-square fs-1 text-success mb-3 d-block"></i>
+              <h5 class="card-title">Daily Planner</h5>
+              <p class="card-text text-muted">Manage wellness tasks and track progress.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Health Tracker Section -->
+  <section id="tracker">
+    <div class="container">
+      <h2 class="text-center mb-4"><i class="bi bi-activity me-2"></i>Health Tracker</h2>
+      <div class="row g-4">
+        <!-- Input Form -->
+        <div class="col-lg-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title">Log Today's Metrics</h5>
+              <form id="health-form" novalidate>
+                <div class="mb-3">
+                  <label for="steps" class="form-label"><i class="bi bi-person-walking me-1"></i>Steps</label>
+                  <input type="number" class="form-control" id="steps" placeholder="e.g. 8000" min="1" />
+                  <div class="invalid-feedback" id="steps-error"></div>
+                </div>
+                <div class="mb-3">
+                  <label for="water" class="form-label"><i class="bi bi-droplet me-1"></i>Water (liters)</label>
+                  <input type="number" class="form-control" id="water" placeholder="e.g. 2.5" step="0.1" min="0.1" />
+                  <div class="invalid-feedback" id="water-error"></div>
+                </div>
+                <div class="mb-3">
+                  <label for="sleep" class="form-label"><i class="bi bi-moon me-1"></i>Sleep (hours)</label>
+                  <input type="number" class="form-control" id="sleep" placeholder="e.g. 7.5" step="0.5" min="0.1" />
+                  <div class="invalid-feedback" id="sleep-error"></div>
+                </div>
+                <div class="mb-3">
+                  <label for="calories" class="form-label"><i class="bi bi-fire me-1"></i>Calories</label>
+                  <input type="number" class="form-control" id="calories" placeholder="e.g. 2000" min="1" />
+                  <div class="invalid-feedback" id="calories-error"></div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="bi bi-plus-circle me-2"></i>Log Entry
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="col-lg-8">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h6 class="card-title">Steps (last 7 days)</h6>
+                  <canvas id="steps-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h6 class="card-title">Water Intake (last 7 days)</h6>
+                  <canvas id="water-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h6 class="card-title">Sleep (last 7 days)</h6>
+                  <canvas id="sleep-chart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h6 class="card-title">Calories (last 7 days)</h6>
+                  <canvas id="calories-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Recommendations Card -->
+        <div class="col-12">
+          <div class="card shadow-sm border-primary" id="ai-recommendations">
+            <div class="card-body">
+              <h5 class="card-title text-primary"><i class="bi bi-robot me-2"></i>AI Recommendations</h5>
+              <div id="ai-suggestions">
+                <p class="text-muted">Log a health entry to receive personalized recommendations.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mental Wellness Section -->
+  <section id="wellness">
+    <div class="container">
+      <h2 class="text-center mb-4"><i class="bi bi-emoji-smile me-2"></i>Mental Wellness</h2>
+      <div class="row g-4">
+        <!-- Mood Tracker -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="card-title">How are you feeling today?</h5>
+              <div class="d-flex flex-wrap gap-2 mb-3" id="mood-buttons">
+                <button class="btn btn-outline-success mood-btn" data-mood="Happy">😊 Happy</button>
+                <button class="btn btn-outline-info mood-btn" data-mood="Calm">😌 Calm</button>
+                <button class="btn btn-outline-secondary mood-btn" data-mood="Sad">😢 Sad</button>
+                <button class="btn btn-outline-warning mood-btn" data-mood="Stressed">😰 Stressed</button>
+                <button class="btn btn-outline-danger mood-btn" data-mood="Anxious">😟 Anxious</button>
+              </div>
+              <div id="mood-quote" class="alert alert-info d-none" role="status"></div>
+              <div id="daily-quote" class="alert alert-light border mt-3">
+                <i class="bi bi-quote me-2"></i><span id="daily-quote-text">Loading quote…</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chatbot -->
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+              <h5 class="card-title"><i class="bi bi-chat-dots me-2"></i>Wellness Chatbot</h5>
+              <div
+                id="chat-history"
+                class="flex-grow-1 overflow-auto border rounded p-2 mb-3"
+                style="min-height:200px;max-height:300px;"
+                aria-live="polite"
+              ></div>
+              <div class="input-group">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="chat-input"
+                  placeholder="Type a message…"
+                  aria-label="Chat message"
+                />
+                <button class="btn btn-primary" id="chat-send">
+                  <i class="bi bi-send"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Daily Planner Section -->
+  <section id="planner">
+    <div class="container">
+      <h2 class="text-center mb-4"><i class="bi bi-check2-square me-2"></i>Daily Planner</h2>
+      <div class="row justify-content-center">
+        <div class="col-md-7">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="input-group mb-2">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="task-input"
+                  placeholder="Add a wellness task…"
+                  aria-label="New task"
+                />
+                <button class="btn btn-success" id="add-task-btn">
+                  <i class="bi bi-plus-lg me-1"></i>Add Task
+                </button>
+              </div>
+              <div id="task-input-error" class="text-danger small d-none mb-2"></div>
+
+              <!-- Progress indicator -->
+              <div id="task-progress-container" class="mb-3 d-none">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                  <span>Progress</span>
+                  <span id="task-progress-label">0 / 0</span>
+                </div>
+                <div class="progress">
+                  <div
+                    id="task-progress-bar"
+                    class="progress-bar bg-success"
+                    role="progressbar"
+                    style="width:0%"
+                    aria-valuenow="0"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  ></div>
+                </div>
+              </div>
+
+              <ul class="list-group" id="task-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact / Footer Section -->
+  <section id="contact" class="bg-dark text-light py-5">
+    <div class="container">
+      <div class="row g-4">
+        <!-- About -->
+        <div class="col-md-4">
+          <h5><i class="bi bi-heart-pulse-fill me-2 text-danger"></i>Smart Health Companion</h5>
+          <p class="text-muted">
+            An AI-powered health and wellness platform helping you track physical metrics,
+            monitor mental wellbeing, and build healthy daily habits — all in your browser.
+          </p>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="col-md-4">
+          <h5>Contact</h5>
+          <ul class="list-unstyled text-muted">
+            <li><i class="bi bi-envelope me-2"></i>contact@smarthealthcompanion.example</li>
+            <li><i class="bi bi-geo-alt me-2"></i>123 Wellness Ave, Health City, HC 00000</li>
+            <li><i class="bi bi-telephone me-2"></i>+1 (555) 000-0000</li>
+          </ul>
+        </div>
+
+        <!-- Social Links -->
+        <div class="col-md-4">
+          <h5>Follow Us</h5>
+          <div class="d-flex gap-3 fs-4">
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="text-light" aria-label="Facebook">
+              <i class="bi bi-facebook"></i>
+            </a>
+            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="text-light" aria-label="Twitter">
+              <i class="bi bi-twitter-x"></i>
+            </a>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="text-light" aria-label="Instagram">
+              <i class="bi bi-instagram"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      <hr class="border-secondary mt-4" />
+      <p class="text-center text-muted small mb-0">
+        &copy; 2024 Smart Health Companion. All rights reserved.
+      </p>
+    </div>
+  </section>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmFXFMrWCU3FA0e6bKIHFORSMR/S"
+    crossorigin="anonymous"
+  ></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- App bootstrap -->
+  <script type="module">
+    import { Storage } from './js/storage.js';
+
+    // Hide loading overlay after 800ms
+    setTimeout(() => {
+      const overlay = document.getElementById('loading-overlay');
+      if (overlay) overlay.style.display = 'none';
+    }, 800);
+
+    // Show storage warning banner if localStorage is unavailable
+    if (!Storage.isAvailable()) {
+      const banner = document.getElementById('storage-warning');
+      if (banner) banner.classList.remove('d-none');
+    }
+  </script>
+</body>
+</html>

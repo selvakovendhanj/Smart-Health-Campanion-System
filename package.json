@@ -1,0 +1,16 @@
+{
+  "name": "smart-health-companion",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:property": "vitest run tests/property"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.0",
+    "fast-check": "^3.19.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "jsdom": "^24.1.0"
+  }
+}
